@@ -15,7 +15,7 @@ import javax.swing.JFileChooser
 
 fun main() = application {
     Window(::exitApplication, rememberWindowState(width = 1600.dp, height = 1000.dp), title = "scan-degrain") {
-        MaterialTheme { App() }
+        MaterialTheme { Surface { App() } }
     }
 }
 

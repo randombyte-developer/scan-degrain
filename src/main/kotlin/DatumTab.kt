@@ -36,7 +36,8 @@ import java.util.Collections
 class Group(val year: Int, val month: Int?, val day: Int?) {
     val photos = mutableStateListOf<File>()
     val date: LocalDate = LocalDate.of(year, month ?: 1, day ?: 1)
-    val label = "%04d".format(year) + month?.let { "-%02d".format(it) }.orEmpty() + day?.let { "-%02d".format(it) }.orEmpty()
+    val label =
+        "%04d".format(year) + month?.let { "-%02d".format(it) }.orEmpty() + day?.let { "-%02d".format(it) }.orEmpty()
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -84,6 +85,7 @@ fun DatumTab(output: File?, thumbnails: MutableMap<File, ImageBitmap>) {
                 val (i, j) = listOf(list.indexOf(a), list.indexOf(file)).sorted()
                 list.subList(i, j + 1).toSet()
             }
+
             ctrl -> if (file in marked) marked - file else marked + file
             else -> setOf(file)
         }
@@ -116,9 +118,9 @@ fun DatumTab(output: File?, thumbnails: MutableMap<File, ImageBitmap>) {
     Box(
         Modifier.fillMaxSize().focusRequester(focus).focusable().onKeyEvent {
             if (it.type != KeyEventType.KeyDown) return@onKeyEvent false
-            when (it.key) {
-                Key.Spacebar -> preview = if (preview == null) anchor else null
-                Key.Escape -> preview = null
+            preview = when (it.key) {
+                Key.Spacebar -> if (preview == null) anchor else null
+                Key.Escape -> null
                 else -> return@onKeyEvent false
             }
             true
@@ -162,9 +164,27 @@ fun DatumTab(output: File?, thumbnails: MutableMap<File, ImageBitmap>) {
                     Group(year.toInt(), month.ifEmpty { null }?.toInt(), day.ifEmpty { null }?.toInt())
                 }.getOrNull()?.takeIf { it.day == null || it.month != null }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(year, { year = it }, Modifier.width(100.dp), label = { Text("Jahr") }, singleLine = true)
-                    OutlinedTextField(month, { month = it }, Modifier.width(100.dp), label = { Text("Monat") }, singleLine = true)
-                    OutlinedTextField(day, { day = it }, Modifier.width(100.dp), label = { Text("Tag") }, singleLine = true)
+                    OutlinedTextField(
+                        year,
+                        { year = it },
+                        Modifier.width(100.dp),
+                        label = { Text("Jahr") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        month,
+                        { month = it },
+                        Modifier.width(100.dp),
+                        label = { Text("Monat") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        day,
+                        { day = it },
+                        Modifier.width(100.dp),
+                        label = { Text("Tag") },
+                        singleLine = true
+                    )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { groups += newGroup!!; selectedGroup = newGroup }, enabled = newGroup != null) {
@@ -212,14 +232,22 @@ fun DatumTab(output: File?, thumbnails: MutableMap<File, ImageBitmap>) {
                     items(groups) { group ->
                         Column(
                             Modifier.fillMaxWidth()
-                                .border(2.dp, if (group == selectedGroup) MaterialTheme.colorScheme.primary else Color.LightGray)
+                                .border(
+                                    2.dp,
+                                    if (group == selectedGroup) MaterialTheme.colorScheme.primary else Color.LightGray
+                                )
                                 .onClick { selectedGroup = group }
                                 .padding(8.dp)
                         ) {
                             Text("${group.label} (${group.photos.size})")
                             LazyRow(Modifier.height(132.dp)) {
                                 items(group.photos, key = { it.path }) { f ->
-                                    Thumbnail(f, f in marked, thumbnails, Modifier.padding(2.dp).selectable(group.photos, f))
+                                    Thumbnail(
+                                        f,
+                                        f in marked,
+                                        thumbnails,
+                                        Modifier.padding(2.dp).selectable(group.photos, f)
+                                    )
                                 }
                             }
                         }
@@ -230,7 +258,8 @@ fun DatumTab(output: File?, thumbnails: MutableMap<File, ImageBitmap>) {
 
         preview?.let { f ->
             val bitmap by produceState<ImageBitmap?>(null, f) {
-                value = withContext(Dispatchers.IO) { imread(f.path, IMREAD_REDUCED_COLOR_2).use { it.toImageBitmap() } }
+                value =
+                    withContext(Dispatchers.IO) { imread(f.path, IMREAD_REDUCED_COLOR_2).use { it.toImageBitmap() } }
             }
             Box(Modifier.fillMaxSize().background(Color.Black).onClick { preview = null }) {
                 bitmap?.let { Image(it, f.name, Modifier.fillMaxSize()) }

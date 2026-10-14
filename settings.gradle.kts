@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "scan-degrain"
+rootProject.name = "negative-tool"

@@ -32,7 +32,7 @@ compose.desktop {
         mainClass = "MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Deb)
-            packageName = "scan-degrain"
+            packageName = "negative-tool"
             packageVersion = "1.0.0"
             modules("java.instrument", "java.management", "jdk.unsupported")
         }

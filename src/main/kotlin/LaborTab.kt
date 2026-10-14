@@ -37,6 +37,7 @@ import org.bytedeco.opencv.opencv_core.Rect
 import java.io.File
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val ROI = 1024
 
@@ -67,7 +68,7 @@ fun LaborTab(folder: File?, s: LaborState) {
         navigator = null; original = null; result = null; millis = null
         val file = s.file ?: return@LaunchedEffect
         val image = withContext(Dispatchers.IO) { imread(file.path) }
-        try {
+        image.use { image ->
             if (image.empty()) return@LaunchedEffect
             dims = IntSize(image.cols(), image.rows())
             navigator = withContext(Dispatchers.Default) {
@@ -81,7 +82,7 @@ fun LaborTab(folder: File?, s: LaborState) {
             s.roi = s.roi?.let { IntOffset(it.x.coerceIn(0, image.cols() - rw), it.y.coerceIn(0, image.rows() - rh)) }
                 ?: IntOffset((image.cols() - rw) / 2, (image.rows() - rh) / 2)
             snapshotFlow { s.roi!! to s.params }.collectLatest { (roi, params) ->
-                delay(300)
+                delay(300.milliseconds)
                 val (o, r, t) = withContext(Dispatchers.Default) {
                     Mat(image, Rect(roi.x, roi.y, rw, rh)).use { crop ->
                         val start = System.nanoTime()
@@ -93,8 +94,6 @@ fun LaborTab(folder: File?, s: LaborState) {
                 }
                 original = o; result = r; millis = t
             }
-        } finally {
-            image.close()
         }
     }
 
@@ -125,7 +124,14 @@ fun LaborTab(folder: File?, s: LaborState) {
                         .drawWithContent {
                             drawContent()
                             val k = size.width / dims.width
-                            s.roi?.let { drawRect(Color.Red, Offset(it.x * k, it.y * k), Size(w * k, h * k), style = Stroke(2f)) }
+                            s.roi?.let {
+                                drawRect(
+                                    Color.Red,
+                                    Offset(it.x * k, it.y * k),
+                                    Size(w * k, h * k),
+                                    style = Stroke(2f)
+                                )
+                            }
                         }
                 ) {
                     Image(nav, null, Modifier.fillMaxSize())
@@ -140,7 +146,9 @@ fun LaborTab(folder: File?, s: LaborState) {
             LabeledSlider("searchWindowSize", p.searchWindowSize.toFloat(), 5f..51f, 22) {
                 s.params = p.copy(searchWindowSize = it.roundToInt() or 1)
             }
-            LabeledSlider("Blend Original ↔ Ergebnis (%)", p.blend.toFloat(), 0f..100f) { s.params = p.copy(blend = it.roundToInt()) }
+            LabeledSlider("Blend Original ↔ Ergebnis (%)", p.blend.toFloat(), 0f..100f) {
+                s.params = p.copy(blend = it.roundToInt())
+            }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 View.entries.forEach { v ->
@@ -178,7 +186,9 @@ fun LaborTab(folder: File?, s: LaborState) {
             if (o != null && r != null) {
                 val density = LocalDensity.current
                 Box(
-                    Modifier.requiredSize(with(density) { (o.width * s.zoom).toDp() }, with(density) { (o.height * s.zoom).toDp() })
+                    Modifier.requiredSize(
+                        with(density) { (o.width * s.zoom).toDp() },
+                        with(density) { (o.height * s.zoom).toDp() })
                         .pointerInput(Unit) {
                             detectHorizontalDragGestures { change, _ ->
                                 s.split = (change.position.x / size.width).coerceIn(0f, 1f)

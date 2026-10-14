@@ -32,7 +32,7 @@ fun App() {
             Button(onClick = { chooseDir()?.let { folder = it } }) { Text("Ordner öffnen") }
             Text(folder?.path.orEmpty(), Modifier.padding(start = 8.dp))
         }
-        TabRow(tab) {
+        PrimaryTabRow(tab) {
             listOf("Labor", "Batch", "Datum").forEachIndexed { i, title ->
                 Tab(tab == i, { tab = i }, text = { Text(title) })
             }
